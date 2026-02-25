@@ -33,7 +33,9 @@
   * 2,000명의 가상 유저 트래픽(Impression/Click)을 생성하여 DB에 주입하는 봇(Bot) 스크립트 작성.
   * `Pandas`를 활용하여 그룹별 클릭률(CTR) 집계.
   * `Scipy`의 카이제곱 검정(Chi-Square Test)을 통해 A/B 그룹 간 클릭률 차이의 통계적 유의성(p-value < 0.05) 검증.
-* *Coming Soon* (실시간 A/B 테스트 현황 대시보드)
+* **Day 4: Streamlit 기반 실시간 A/B 테스트 모니터링 대시보드 구축** (`src/dashboard.py`)
+  * 비개발 직군(PM/경영진)을 위한 그룹별 CTR 및 승자 알고리즘 실시간 시각화 웹 화면 구현.
+
 
 ## 기술 스택 (Tech Stack)
 | Category | Technology | Usage |
@@ -42,6 +44,7 @@
 | **Logic** | Python `hashlib` | 유저 ID 해싱 및 그룹핑 |
 | **Database** | **SQLite, SQLAlchemy** | 유저 행동 로그(Impression/Click) 메타데이터 적재 |
 | **Analysis** | **Pandas, Scipy** | 데이터 집계(CTR 계산) 및 통계적 가설 검정(p-value) |
+| **Dashboard** | **Streamlit** | 실시간 A/B 테스트 결과 모니터링 웹 인터페이스 |
 
 ## 실행 방법 (How to Run)
 ```bash
@@ -58,6 +61,9 @@ uvicorn src.main:app --reload
 # 4. 데이터 시뮬레이션 및 분석 검증
 python -m src.mock_data
 python -m src.analysis
+
+# 5. [터미널 3] 실시간 대시보드 실행 🚀
+streamlit run src/dashboard.py
 
 ```
 
