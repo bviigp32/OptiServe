@@ -1,54 +1,51 @@
 # OptiServe: A/B Testing & Recommendation Engine Backend
 
-> **"데이터 기반 의사결정을 위한 A/B 테스트 및 추천 시스템 백엔드 아키텍처"**
-> 머신러닝 기반의 추천 알고리즘을 서빙하고, 사용자 트래픽을 A/B 그룹으로 분산(Routing)시켜 CTR(클릭률) 성과를 통계적으로 검증하는 Full-Cycle 데이터/백엔드 시스템입니다.
+> **"대규모 트래픽 처리를 고려한 A/B 테스트 및 추천 시스템 백엔드 아키텍처"**
+> 머신러닝 추천 모델을 서빙하고, 사용자 트래픽을 A/B 그룹으로 분산(Routing)시켜 CTR 성과를 검증합니다. 특히 **캐싱(Caching)과 비동기 백그라운드 로깅(Async Logging)**을 도입하여 대용량 트래픽 병목 현상을 해결한 Full-Cycle 데이터/백엔드 시스템입니다.
 
-![Python](https://img.shields.io/badge/Python-3.11-blue?logo=python) ![FastAPI](https://img.shields.io/badge/FastAPI-Backend-009688?logo=fastapi) ![Scikit-Learn](https://img.shields.io/badge/Scikit--learn-ML-F7931E?logo=scikit-learn) ![Pandas](https://img.shields.io/badge/Pandas-Data%20Analysis-150458?logo=pandas) ![Streamlit](https://img.shields.io/badge/Streamlit-Dashboard-FF4B4B?logo=streamlit)
+![Python](https://img.shields.io/badge/Python-3.11-blue?logo=python) ![FastAPI](https://img.shields.io/badge/FastAPI-Backend-009688?logo=fastapi) ![Scikit-Learn](https://img.shields.io/badge/Scikit--learn-ML-F7931E?logo=scikit-learn) ![SQLite](https://img.shields.io/badge/SQLite-Database-003B57?logo=sqlite) ![Streamlit](https://img.shields.io/badge/Streamlit-Dashboard-FF4B4B?logo=streamlit)
 
 ## 프로젝트 개요 (Overview)
-* **목표:** 머신러닝 추천 모델의 성능을 비즈니스 지표(클릭률)로 검증하기 위한 A/B 테스트 인프라 구축.
+* **목표:** 머신러닝 추천 모델의 성능(CTR)을 검증하기 위한 A/B 테스트 인프라 구축 및 API 성능 최적화.
 * **기간:** 2026.02.22 ~ (진행 중)
-* **역할:** ML 추천 알고리즘 구현, 백엔드 API 서빙, 로깅 파이프라인, A/B 테스트 통계 분석 대시보드 개발 (1인 프로젝트)
+* **역할:** 백엔드/데이터 엔지니어링 (API 서빙, 비동기 로깅 파이프라인, 캐싱 고도화, ML 모델 연동, A/B 대시보드)
 
 ## 시스템 아키텍처 (System Architecture)
-1. **Routing (API):** MD5 Hashing을 통해 유저 트래픽을 일관된 A군(대조군) / B군(실험군)으로 50:50 분산.
-2. **Serving (ML):** - **Model A (대조군):** DB 클릭 로그를 집계한 **인기도 기반 베스트셀러 추천 (Popularity)**
-   - **Model B (실험군):** `Scikit-learn` 코사인 유사도(Cosine Similarity)를 활용한 **유저 기반 협업 필터링 (User-Based CF)**
-   - *Cold Start 처리: 클릭 기록이 없는 신규 유저 진입 시 Model A(베스트셀러)로 Fallback 처리.*
-3. **Logging (DB):** `SQLAlchemy` ORM으로 Impression/Click 로그 SQLite 실시간 적재.
-4. **Analysis & Dashboard:** 카이제곱 검정(Chi-Square Test)을 통한 승리 알고리즘 검증 및 `Streamlit` 실시간 모니터링 환경 제공.
+1. **Routing:** `Hashlib(MD5)`을 통해 유저 트래픽을 일관된 A군(대조군) / B군(실험군)으로 50:50 분산.
+2. **Serving & Caching (성능 최적화 ⚡):** - Model A (베스트셀러) / Model B (User-Based CF) 모델 연동 및 Cold Start 예외 처리.
+   - 무거운 ML 연산의 병목을 해결하기 위해 `lru_cache`를 도입, 동일 요청에 대한 **In-Memory Caching** 적용 (응답 지연 시간 최소화).
+3. **Async Logging (병목 해결 ⚡):**
+   - 기존의 동기식 DB Insert가 일으키는 API I/O 병목을 해결하기 위해 FastAPI `BackgroundTasks` 도입.
+   - 유저에게는 초고속으로 응답을 반환하고, Impression/Click 로그 적재는 **백그라운드에서 비동기 처리(Fire-and-Forget)**.
+4. **Analysis & Dashboard:** `Scipy` 카이제곱 검정(Chi-Square) 기반 A/B 승자 검증 및 `Streamlit` 실시간 모니터링 환경 제공.
 
 ## 개발 로그 (Development Log)
-### Phase 1: 라우팅 백엔드 & 로깅 (Backend & Data Pipeline)
-* **Day 1~2:** FastAPI 기반 A/B 라우팅 로직 구현 및 SQLAlchemy ORM 로깅(`impression`, `click`) 파이프라인 구축.
-### Phase 2: 머신러닝 추천 엔진 (ML Serving)
-* **Day 5: 머신러닝 추천 로직 연동** (`src/recommendation.py`)
-  * 하드코딩된 모의 데이터를 제거하고 Pandas, Scikit-learn을 활용해 DB 기반 추천 엔진 구현.
-  * User-Item 행렬을 구성하여 코사인 유사도 기반 CF 추천 알고리즘 적용 및 Cold Start 방어 로직 추가.
-### Phase 3: 통계 분석 및 대시보드 (Analysis Focus)
-* **Day 3~4:** 가상 트래픽 시뮬레이터(`src/mock_data.py`), Scipy 카이제곱 가설 검정, Streamlit 실시간 CTR 대시보드(`src/dashboard.py`) 구축.
+* **Phase 1~2:** FastAPI 기반 A/B 라우팅 로직 및 SQLAlchemy ORM 로깅 파이프라인 구축. (Day 1-2)
+* **Phase 3:** Scikit-learn 기반 협업 필터링(CF) 추천 로직 연동 및 가상 트래픽 발생 봇 구현. (Day 3, 5)
+* **Phase 4:** 카이제곱 가설 검정(p-value) 로직 및 Streamlit 실시간 대시보드 구축. (Day 4)
+* **Phase 5 (성능 고도화):** FastAPI `BackgroundTasks`를 활용한 비동기 로깅 전환 및 `lru_cache`를 이용한 추천 결과 캐싱 처리. (Day 6)
 
 ## 기술 스택 (Tech Stack)
 | Category | Technology | Usage |
 | :--- | :--- | :--- |
-| **Backend** | **FastAPI, Uvicorn, SQLite** | 비동기 API 서버 및 행동 로그 데이터베이스 |
-| **ML / Logic** | **Scikit-learn, Python Hashlib** | 코사인 유사도 기반 CF 모델 구현, 트래픽 해싱 |
-| **Analysis** | **Pandas, Scipy, Streamlit** | 통계적 가설 검정(p-value) 및 실시간 대시보드 |
+| **Backend & Infra** | **FastAPI, BackgroundTasks** | 비동기 API 서버 및 Non-blocking 백그라운드 로깅 |
+| **Database** | **SQLite, SQLAlchemy** | 유저 행동 로그 메타데이터 적재 |
+| **ML & Logic** | **Scikit-learn, Caching** | CF 코사인 유사도 모델 구현 및 LRU 메모리 캐싱 |
+| **Analysis** | **Pandas, Scipy, Streamlit** | A/B 테스트 통계적 유의성 검증 및 대시보드 시각화 |
 
 ## 실행 방법 (How to Run)
 ```bash
 # 1. 패키지 설치
 pip install fastapi uvicorn pydantic sqlalchemy pandas scipy streamlit scikit-learn
 
-# 2. FastAPI 서버 실행 (API 및 로깅용)
+# 2. FastAPI 서버 실행 (성능 최적화 버전)
 uvicorn src.main:app --reload
 
-# 3. [선택] 가상 트래픽 발생
+# 3. [선택] 대량의 가상 트래픽 발생
 python -m src.mock_data
 
-# 4. 실시간 대시보드 실행
+# 4. 실시간 A/B 테스트 대시보드 실행
 streamlit run src/dashboard.py
-
 ```
 
 ---
