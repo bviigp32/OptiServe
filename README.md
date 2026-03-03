@@ -3,7 +3,7 @@
 > **"대규모 트래픽 처리를 고려한 A/B 테스트 및 추천 시스템 백엔드 아키텍처"**
 > 머신러닝 추천 모델을 서빙하고, 캐싱(Caching)과 비동기 백그라운드 로깅(Async Logging)을 도입하여 병목을 해결했습니다. 또한 Docker 컨테이너화를 통해 Production-Ready 배포 환경을 구축한 Full-Cycle 데이터/백엔드 시스템입니다.
 
-![Python](https://img.shields.io/badge/Python-3.11-blue?logo=python) ![FastAPI](https://img.shields.io/badge/FastAPI-Backend-009688?logo=fastapi) ![SQLite](https://img.shields.io/badge/SQLite-Database-003B57?logo=sqlite) ![Streamlit](https://img.shields.io/badge/Streamlit-Dashboard-FF4B4B?logo=streamlit) ![Docker](https://img.shields.io/badge/Docker-Container-2496ED?logo=docker) ![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-CI/CD-2088FF?logo=github-actions)![Locust](https://img.shields.io/badge/Locust-Load%20Testing-42b983?logo=locust)
+![Python](https://img.shields.io/badge/Python-3.11-blue?logo=python) ![FastAPI](https://img.shields.io/badge/FastAPI-Backend-009688?logo=fastapi) ![SQLite](https://img.shields.io/badge/SQLite-Database-003B57?logo=sqlite) ![Streamlit](https://img.shields.io/badge/Streamlit-Dashboard-FF4B4B?logo=streamlit) ![Docker](https://img.shields.io/badge/Docker-Container-2496ED?logo=docker) ![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-CI/CD-2088FF?logo=github-actions) ![Locust](https://img.shields.io/badge/Locust-Load%20Testing-42b983?logo=locust)
 
 ## 프로젝트 개요 (Overview)
 * **목표:** 머신러닝 추천 모델의 성능(CTR)을 검증하기 위한 A/B 테스트 인프라 구축 및 API 성능 최적화.
@@ -33,36 +33,35 @@
 * **Phase 3:** Scikit-learn 기반 협업 필터링(CF) 추천 로직 연동 및 가상 트래픽 발생 봇 구현. (Day 3, 5)
 * **Phase 4:** 카이제곱 가설 검정(p-value) 로직 및 Streamlit 실시간 대시보드 구축. (Day 4)
 * **Phase 5 (성능 고도화):** FastAPI `BackgroundTasks`를 활용한 비동기 로깅 전환 및 `lru_cache`를 이용한 추천 결과 캐싱 처리. (Day 6)
-* **Phase 6 (유지보수 및 테스트):** * `pytest` 기반 API 자동 테스트 코드(`test_main.py`) 작성. (Day 8)
-  * `GitHub Actions`를 활용한 CI 파이프라인(자동 테스트 환경) 구축. (Day 9)
-* **Phase 7 (성능 튜닝 및 부하 테스트):** `Locust` 기반 대규모 트래픽 시나리오(`locustfile.py`) 작성 및 병목 개선 지표(RPS, Response Time) 수치화 검증. (Day 10)
+* **Phase 6 (유지보수 및 테스트):** `pytest` 기반 API 자동 테스트 및 `GitHub Actions` CI 파이프라인 구축. (Day 8-9)
+* **Phase 7 (성능 튜닝 및 부하 테스트):** `Locust` 기반 대규모 트래픽 시나리오 작성 및 병목 개선 지표 수치화 검증. (Day 10)
 
 ## 기술 스택 (Tech Stack)
 | Category | Technology | Usage |
 | :--- | :--- | :--- |
-| **Backend & Infra** | **FastAPI, BackgroundTasks** | 비동기 API 서버 및 Non-blocking 백그라운드 로깅 |
+| **Backend** | **FastAPI, BackgroundTasks** | 비동기 API 서버 및 Non-blocking 백그라운드 로깅 |
 | **Database** | **SQLite, SQLAlchemy** | 유저 행동 로그 메타데이터 적재 |
 | **ML & Logic** | **Scikit-learn, Caching** | CF 코사인 유사도 모델 구현 및 LRU 메모리 캐싱 |
 | **Analysis** | **Pandas, Scipy, Streamlit** | A/B 테스트 통계적 유의성 검증 및 대시보드 시각화 |
+| **Infra & CI/CD**| **Docker, GitHub Actions, Pytest, Locust** | 컨테이너 배포, CI 자동화 파이프라인 및 부하 테스트 |
 
 ## 실행 방법 (How to Run)
 ```bash
-# 1. 패키지 설치
-pip install fastapi uvicorn pydantic sqlalchemy pandas scipy streamlit scikit-learn
-
-# 2. FastAPI 서버 실행 (성능 최적화 버전)
+# 1. 패키지 설치 및 Local 환경에서 실행 (권장)
+pip install -r requirements.txt
 uvicorn src.main:app --reload
 
-# 3. [선택] 대량의 가상 트래픽 발생
-python -m src.mock_data
+# 2. Docker 컨테이너로 전체 인프라 한 번에 실행 
+docker-compose up --build
 
-# 4. 실시간 A/B 테스트 대시보드 실행
-streamlit run src/dashboard.py
 ```
+
+## 향후 고도화 계획 (Future Work)
+
+* **분산 캐싱(Distributed Caching) 환경 구축:** 현재 `lru_cache`를 통한 단일 서버 메모리 캐싱의 한계를 극복하기 위해, 서버 다중화(Scale-out) 시에도 데이터 정합성을 유지할 수 있도록 **Redis** 기반의 인메모리 아키텍처로 고도화 예정.
+* **메시지 큐(Message Queue) 도입:** 트래픽 폭증 시 데이터 유실 방지를 위한 Kafka/RabbitMQ 도입 검토.
 
 ---
 
 *Created by [Kim Kyunghun]*
-
-
 
