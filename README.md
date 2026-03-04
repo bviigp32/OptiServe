@@ -46,9 +46,7 @@
 
 ## 실행 방법 (How to Run)
 ```bash
-# Docker 컨테이너로 전체 인프라(API + Redis + 대시보드) 한 번에 실행 🐳
 docker-compose up --build -d
-
 ```
 
 ## 향후 고도화 계획 (Future Work)
