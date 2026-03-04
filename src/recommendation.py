@@ -2,13 +2,28 @@ import pandas as pd
 import sqlite3
 from sklearn.metrics.pairwise import cosine_similarity
 import os
-from functools import lru_cache 
+import json
+import redis
+import logging
 
+logger = logging.getLogger(__name__)
 DB_PATH = "optiserve.db"
 
-@lru_cache(maxsize=1024) 
+REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
+redis_client = redis.Redis(host=REDIS_HOST, port=6379, db=0, decode_responses=True)
+
 def get_popular_items(n=3):
-    """[Model A: 인기도 기반 추천] (캐싱 적용)"""
+    """[Model A: 인기도 기반 추천] (Redis 캐싱 + Fallback 적용)"""
+    cache_key = f"popular_items:{n}"
+    
+    try:
+        cached_data = redis_client.get(cache_key)
+        if cached_data:
+            return json.loads(cached_data)
+    except redis.ConnectionError:
+        logger.warning("[Cache Miss] Redis 연결 실패! 기본 DB 연산으로 우회합니다.")
+        pass 
+
     if not os.path.exists(DB_PATH):
         return ["베스트셀러_A", "베스트셀러_B", "베스트셀러_C"]
 
@@ -24,13 +39,28 @@ def get_popular_items(n=3):
     df = pd.read_sql(query, conn, params=(n,))
     conn.close()
 
-    if df.empty:
-        return ["맥북 프로", "아이폰 15", "에어팟 프로"]
-    return df['item_name'].tolist()
+    result = ["맥북 프로", "아이폰 15", "에어팟 프로"] if df.empty else df['item_name'].tolist()
+    
+    # 🌟 3. 캐시 저장 시도 (실패해도 무시)
+    try:
+        redis_client.setex(cache_key, 3600, json.dumps(result))
+    except redis.ConnectionError:
+        pass
+    
+    return result
 
-@lru_cache(maxsize=1024) 
 def get_cf_recommendation(user_id, n=3):
-    """[Model B: 협업 필터링] (캐싱 적용)"""
+    """[Model B: 협업 필터링] (Redis 캐싱 + Fallback 적용)"""
+    cache_key = f"cf_recommend:{user_id}:{n}"
+    
+    try:
+        cached_data = redis_client.get(cache_key)
+        if cached_data:
+            return json.loads(cached_data)
+    except redis.ConnectionError:
+        logger.warning(f"[Cache Miss] Redis 연결 실패! 유저({user_id}) CF 연산으로 우회합니다.")
+        pass
+
     if not os.path.exists(DB_PATH):
         return get_popular_items(n)
 
@@ -65,4 +95,11 @@ def get_cf_recommendation(user_id, n=3):
             if item not in recommendations and len(recommendations) < n:
                 recommendations.append(item)
 
-    return recommendations[:n]
+    result = recommendations[:n]
+    
+    try:
+        redis_client.setex(cache_key, 3600, json.dumps(result))
+    except redis.ConnectionError:
+        pass
+    
+    return result
