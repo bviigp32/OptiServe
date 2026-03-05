@@ -33,13 +33,14 @@
 * **Phase 3~4:** Scikit-learn 기반 협업 필터링(CF) 추천 연동, 가상 트래픽 발생 봇 및 Streamlit A/B 대시보드 구축. (Day 3-5)
 * **Phase 5~6:** FastAPI `BackgroundTasks` 비동기 처리, `pytest` 자동 테스트 및 `GitHub Actions` CI 구축. (Day 6-9)
 * **Phase 7:** `Locust` 기반 1,000명 대규모 트래픽 시나리오 작성 및 병목 개선 수치화(RPS, Response Time) 검증. (Day 10)
-* **Phase 8 (아키텍처 고도화):** 단일 서버 메모리 캐싱(`lru_cache`)의 한계를 극복하기 위해 **Redis 기반 분산 캐싱** 도입 및 Redis 서버 다운 시의 무중단 서빙을 위한 **Fallback 장애 방어 로직** 구현. (Day 11)
+* **Phase 8 (캐싱 고도화):** **Redis 분산 캐싱** 도입 및 Redis 서버 다운 시의 무중단 서빙을 위한 **Fallback 장애 방어 로직** 구현. (Day 11)
+* **Phase 9 (DB 인프라 고도화):** 병목 및 락(Lock) 현상 방지를 위해 SQLite에서 **PostgreSQL 마이그레이션** 수행 및 Docker Compose 통합. (Day 12)
 
 ## 기술 스택 (Tech Stack)
 | Category | Technology | Usage |
 | :--- | :--- | :--- |
 | **Backend & Infra** | **FastAPI, BackgroundTasks, Redis** | 비동기 API 서버, Non-blocking 로깅, 분산 캐싱 저장소 |
-| **Database** | **SQLite, SQLAlchemy** | 유저 행동 로그 메타데이터 적재 |
+| **Database** | **PostgreSQL, SQLAlchemy** | 유저 행동 로그 메타데이터 적재 및 운영용 RDBMS |
 | **ML & Logic** | **Scikit-learn** | CF 코사인 유사도 모델 구현 및 추천 로직 |
 | **Analysis** | **Pandas, Scipy, Streamlit** | A/B 테스트 통계적 유의성 검증 및 대시보드 시각화 |
 | **Infra & CI/CD**| **Docker, GitHub Actions, Pytest, Locust** | 컨테이너 배포, CI 자동화 파이프라인 및 부하 테스트 |

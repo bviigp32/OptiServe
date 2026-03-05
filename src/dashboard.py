@@ -3,6 +3,7 @@ import pandas as pd
 import sqlite3
 from scipy.stats import chi2_contingency
 import os
+from src.database import engine
 
 # 페이지 기본 설정
 st.set_page_config(page_title="OptiServe A/B Test Dashboard", page_icon="🚀", layout="wide")
@@ -12,14 +13,11 @@ st.markdown("추천 알고리즘 변경에 따른 **클릭률(CTR)** 변화와 *
 
 def load_data():
     """DB에서 로그 데이터를 불러옵니다."""
-    db_path = "optiserve.db"
-    if not os.path.exists(db_path):
+    try:
+        df = pd.read_sql_query("SELECT * FROM user_logs", engine)
+        return df
+    except Exception as e:
         return pd.DataFrame()
-    
-    conn = sqlite3.connect(db_path)
-    df = pd.read_sql_query("SELECT * FROM user_logs", conn)
-    conn.close()
-    return df
 
 df = load_data()
 

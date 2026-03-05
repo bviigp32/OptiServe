@@ -1,6 +1,17 @@
 version: '3.8'
 
 services:
+  db:
+    image: postgres:15-alpine
+    container_name: optiserve_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: opti_user
+      POSTGRES_PASSWORD: opti_password
+      POSTGRES_DB: optiserve_db
+    ports:
+      - "5432:5432"
+
   redis:
     image: redis:alpine
     container_name: optiserve_redis
@@ -13,8 +24,13 @@ services:
     ports:
       - "8000:8000"
     command: uvicorn src.main:app --host 0.0.0.0 --port 8000
+    environment:
+      # API가 PostgreSQL과 Redis에 접속할 수 있도록 주소(URL)를 환경변수로 주입
+      - DATABASE_URL=postgresql://opti_user:opti_password@db:5432/optiserve_db
+      - REDIS_HOST=redis
     depends_on:
-      - redis 
+      - db
+      - redis
 
   dashboard:
     build: .
@@ -22,5 +38,7 @@ services:
     ports:
       - "8501:8501"
     command: streamlit run src/dashboard.py --server.address=0.0.0.0
+    environment:
+      - DATABASE_URL=postgresql://opti_user:opti_password@db:5432/optiserve_db
     depends_on:
       - api
