@@ -1,6 +1,13 @@
 version: '3.8'
 
 services:
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: optiserve_rabbitmq
+    ports:
+      - "5672:5672" 
+      - "15672:15672"
+
   db:
     image: postgres:15-alpine
     container_name: optiserve_postgres
@@ -25,12 +32,24 @@ services:
       - "8000:8000"
     command: uvicorn src.main:app --host 0.0.0.0 --port 8000
     environment:
-      # API가 PostgreSQL과 Redis에 접속할 수 있도록 주소(URL)를 환경변수로 주입
       - DATABASE_URL=postgresql://opti_user:opti_password@db:5432/optiserve_db
       - REDIS_HOST=redis
+      - RABBITMQ_HOST=rabbitmq 
     depends_on:
       - db
       - redis
+      - rabbitmq
+
+  worker:
+    build: .
+    container_name: optiserve_worker
+    command: python -m src.worker
+    environment:
+      - DATABASE_URL=postgresql://opti_user:opti_password@db:5432/optiserve_db
+      - RABBITMQ_HOST=rabbitmq
+    depends_on:
+      - db
+      - rabbitmq
 
   dashboard:
     build: .
