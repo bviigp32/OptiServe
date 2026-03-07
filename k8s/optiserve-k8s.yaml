@@ -1,0 +1,156 @@
+# 1. PostgreSQL DB
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15-alpine
+        env:
+        - name: POSTGRES_USER
+          value: "opti_user"
+        - name: POSTGRES_PASSWORD
+          value: "opti_password"
+        - name: POSTGRES_DB
+          value: "optiserve_db"
+        ports:
+        - containerPort: 5432
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: db
+spec:
+  selector:
+    app: postgres
+  ports:
+    - protocol: TCP
+      port: 5432
+      targetPort: 5432
+
+---
+# 2. Redis Cache
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+      - name: redis
+        image: redis:alpine
+        ports:
+        - containerPort: 6379
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+spec:
+  selector:
+    app: redis
+  ports:
+    - protocol: TCP
+      port: 6379
+      targetPort: 6379
+
+---
+# 3. RabbitMQ
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rabbitmq-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rabbitmq
+  template:
+    metadata:
+      labels:
+        app: rabbitmq
+    spec:
+      containers:
+      - name: rabbitmq
+        image: rabbitmq:3-management-alpine
+        ports:
+        - containerPort: 5672
+        - containerPort: 15672
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rabbitmq
+spec:
+  selector:
+    app: rabbitmq
+  ports:
+    - name: amqp
+      protocol: TCP
+      port: 5672
+      targetPort: 5672
+    - name: management
+      protocol: TCP
+      port: 15672
+      targetPort: 15672
+
+---
+# 4. FastAPI Server (트래픽 폭증 시 이 replicas를 3~5개로 늘립니다!)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-deployment
+spec:
+  replicas: 2 
+  selector:
+    matchLabels:
+      app: optiserve-api
+  template:
+    metadata:
+      labels:
+        app: optiserve-api
+    spec:
+      containers:
+      - name: optiserve-api
+        image: optiserve-api:latest # 빌드한 로컬 이미지 사용
+        imagePullPolicy: Never
+        env:
+        - name: DATABASE_URL
+          value: "postgresql://opti_user:opti_password@db:5432/optiserve_db"
+        - name: REDIS_HOST
+          value: "redis"
+        - name: RABBITMQ_HOST
+          value: "rabbitmq"
+        ports:
+        - containerPort: 8000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-service
+spec:
+  type: LoadBalancer # 외부에서 접속할 수 있도록 로드밸런서 타겟 설정
+  selector:
+    app: optiserve-api
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000
